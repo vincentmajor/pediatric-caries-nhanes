@@ -8,18 +8,26 @@ if(!require(tidyverse)){install.packages('tidyverse');library(tidyverse)}
 #### Loading data ----
 ## Dye and colleagues used 2011-2012 data
 
+## Check if a data/ directory exists 
+if(!dir.exists("data")){
+  dir.create("data")
+  writeLines("Created a data/ directory to store the data")
+  }
+
 ## Load list of all availible files 
-#files <- nhanes_data_files(destination = "data", cache = TRUE)
-##variables <- nhanes_variables()
-
-## Search for data in 2011-2012 cycle
-#files.2011 = nhanes_search(files, "", cycle == "2011-2012")
-
-## reduce this list to ones we want
-#files.dye = files.2011[files.2011$data_file_name %in% c('DEMO_G', 'OHXDEN_G', 'OHXPER_G', 'OHXREF_G'),]
-
-## Download the data - should only do once!
-# data.dye.raw = nhanes_load_data(files.dye$data_file_name, files.dye$cycle, destination = "data", cache = TRUE)
+if(length(list.files("data")) == 0){
+  files <- nhanes_data_files(destination = "data", cache = TRUE)
+  ##variables <- nhanes_variables()
+  
+  ## Search for data in 2011-2012 cycle
+  files.2011 = nhanes_search(files, "", cycle == "2011-2012")
+  
+  ## reduce this list to ones we want
+  files.dye = files.2011[files.2011$data_file_name %in% c('DEMO_G', 'OHXDEN_G', 'OHXPER_G', 'OHXREF_G'),]
+  
+  ## Download the data - should only do once!
+  data.dye.raw = nhanes_load_data(files.dye$data_file_name, files.dye$cycle, destination = "data", cache = TRUE)
+}
 
 temp.files = setdiff(list.files("data"), "nhanes_data_files.csv")
 
@@ -54,6 +62,8 @@ missing.mask = select(data.ohxden, SEQN, OHX02CTC:OHX31CTC) %>%
 
 # clean up
 remove(missing.values)
+
+mean(missing.mask$missing_flag) # 33.6% of people are missing > 1 tooth
 
 ## Could filter on this flag but will keep to combine with caries.
 #data.ohxden = slice(data.ohxden, !missing.mask$missing_flag) # 8073 --> 5360
