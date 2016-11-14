@@ -39,6 +39,8 @@ data.ohxden.raw = read_csv(file.path("data", temp.files[2]))
 
 #data.test = dplyr::left_join(data.ohxden, data.demo)
 
+#### aggregating oral health examination into caries or not ----
+## http://wwwn.cdc.gov/Nchs/Nhanes/2011-2012/OHXDEN_G.htm
 ## require complete examination status and dentition status
 data.ohxden = filter(data.ohxden.raw, OHDEXSTS == 1, OHDDESTS == 1) # n = 8956 --> 8073
 
@@ -47,15 +49,17 @@ data.ohxden = filter(data.ohxden.raw, OHDEXSTS == 1, OHDDESTS == 1) # n = 8956 -
 data.ohxden = select(data.ohxden, -OHDEXSTS, -OHDDESTS, -OHXIMP, -(file_name:end_year)) # remove 3 columns
 
 ## OHX01TC Tooth count. We don't care about primary/missing/permanent right?
-data.ohxden = select(data.ohxden, -(OHX01TC:OHX32TC)) # remove 32 columns from 124 to 103
+## apparently we do so I will flag those that are primary as a separate count
+#data.ohxden = select(data.ohxden, -(OHX01TC:OHX32TC)) # remove 32 columns from 124 to 103
 
 ## Coronal caries: Tooth count
 ## going to assume that a missing due to dental disease counts as an enormous cavity
 ## flags for missing by dental disease: E, P, R
 ## for columns OHX02CTC:OHX31CTC flag any EPR
 
+
 missing.values = c("E", "P", "R")
-missing.mask = select(data.ohxden, SEQN, OHX02CTC:OHX31CTC) %>% 
+permanent.missing.mask = select(data.ohxden, SEQN, OHX02CTC:OHX31CTC) %>% 
   gather(tooth, value, OHX02CTC:OHX31CTC) %>% 
   mutate(flag = value %in% missing.values) %>% 
   group_by(SEQN) %>% 
@@ -188,7 +192,7 @@ data.ohxden.demo$age = as.integer(cut(data.ohxden.demo$age, breaks = agegroups.d
 data.ohxden.demo.pediatric = filter(data.ohxden.demo, age >=2, age<=6) 
 
 agegroups.labels = c('2-5', '6-8', '9-11', '12-15', '16-19')
-ethnicity.labels = c('mexican-american', 'hispanic', 'white', 'black', 'asian', 'other')
+ethnicity.labels = c('mex', 'hispan', 'white', 'black', 'asian', 'other')
 
 data.ohxden.demo.pediatric$age = factor(data.ohxden.demo.pediatric$age, labels = agegroups.labels)
 data.ohxden.demo.pediatric$ethnicity = factor(data.ohxden.demo.pediatric$ethnicity, labels = ethnicity.labels)
@@ -199,30 +203,36 @@ summary_caries.eth = group_by(data.ohxden.demo.pediatric, ethnicity) %>% summari
 summary_caries.age.eth = group_by(data.ohxden.demo.pediatric, age, ethnicity) %>%
   summarize(n = n(), rate = mean(cavity_flag))
 
+## Dye actually stratifies by primary and permanent teeth for the 2-5 and 6-8 age groups
+## Should we do that too?
 
-#barplot(summary_caries.age$rate, names.arg = agegroups.labels)
+
+## First plot, age 2-5 and 6-8 and all ethnicities
+barplot(summary_caries.age$rate, ylim = c(0, 1), names.arg = agegroups.labels)
+barplot(summary_caries.eth$rate, ylim = c(0, 1), names.arg = ethnicity.labels)
+## Need to work on the plotting to replicate that of Dye
 
 ## from ggplot2 documentation of geom_bar
-ggplot(summary_caries.age, aes(age, rate)) + geom_bar(stat = "identity")
-ggplot(summary_caries.eth, aes(ethnicity, rate)) + geom_bar(stat = "identity")
+# ggplot(summary_caries.age, aes(age, rate)) + geom_bar(stat = "identity")
+# ggplot(summary_caries.eth, aes(ethnicity, rate)) + geom_bar(stat = "identity")
 
-ggplot(summary_caries.age.eth, aes(age, ethnicity, rate)) + geom_tile(stat = "identity", color = 'red')
+#ggplot(summary_caries.age.eth, aes(age, ethnicity, rate)) + geom_tile(stat = "identity", color = 'red')
 
 # if(!require(viridis)){install.packages('viridis');library(viridis)}
-if(!require(ggthemes)){install.packages('ggthemes');library(ggthemes)}
+# if(!require(ggthemes)){install.packages('ggthemes');library(ggthemes)}
 
-gg <- ggplot(summary_caries.age.eth, aes(x=ethnicity, y=age, fill=rate))
-gg <- gg + geom_tile(color="white", size=0.1)
-# gg <- gg + scale_fill_viridis(name="# Events") # not a huge fan of blue -> yellow
-gg <- gg + scale_colour_grey(start = 1, end = 0)
-gg <- gg + coord_equal()
-gg <- gg + labs(x=NULL, y=NULL, title="Rates of Caries in children and adolescents")
-gg <- gg + theme_tufte(base_family="Helvetica")
-gg <- gg + theme(plot.title=element_text(hjust=0))
-gg <- gg + theme(axis.ticks=element_blank())
-gg <- gg + theme(axis.text=element_text(size=7))
-gg <- gg + theme(legend.title=element_text(size=8))
-gg <- gg + theme(legend.text=element_text(size=6))
-gg
+# gg <- ggplot(summary_caries.age.eth, aes(x=ethnicity, y=age, fill=rate))
+# gg <- gg + geom_tile(color="white", size=0.1)
+# # gg <- gg + scale_fill_viridis(name="# Events") # not a huge fan of blue -> yellow
+# gg <- gg + scale_colour_grey(start = 1, end = 0)
+# gg <- gg + coord_equal()
+# gg <- gg + labs(x=NULL, y=NULL, title="Rates of Caries in children and adolescents")
+# gg <- gg + theme_tufte(base_family="Helvetica")
+# gg <- gg + theme(plot.title=element_text(hjust=0))
+# gg <- gg + theme(axis.ticks=element_blank())
+# gg <- gg + theme(axis.text=element_text(size=7))
+# gg <- gg + theme(legend.title=element_text(size=8))
+# gg <- gg + theme(legend.text=element_text(size=6))
+# gg
 ## Not happy with the heatmap.
 ## I am going to revert back to bar charts 
