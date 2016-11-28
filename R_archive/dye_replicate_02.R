@@ -64,18 +64,23 @@ data.ohxden = select(data.ohxden, -OHDEXSTS, -OHDDESTS, -OHXIMP, -(file_name:end
 #a = unique(select(primary.missing.mask, tooth, question)) 
 ## no wisdom teeth in the cavies status..
 
+## tooth count, primary, permanent = 1, missing etc.
 tc.dict = data.frame(key = c(1, 2, 3, 4, 5, 9, NA),
-                           value = c(0, 1, NA, NA, NA, NA, NA),
-                           stringsAsFactors = FALSE)
+                      value = c(0, 1, NA, NA, NA, NA, NA),
+                      stringsAsFactors = FALSE)
+## coronol tooth count, sound = 1, unsound etc
 ctc.dict = data.frame(key = c('D', 'E', 'J', 'K', 'M', 'P', 'Q', 'R', 'S', 'T', 'U', 'X', 'Y', 'Z'),
                       value = c(1, 0, 0, 0, 0, 0, 0, 0, 1, 0, NA, 0, NA, 0), 
                       stringsAsFactors = FALSE)
+## coronol surface condition, given unsound, is it a cavity = 1 or restored
 csc.dict = data.frame(key = c(seq(0, 9), NA),
                       value = c(rep(1, 5), rep(0, 5), NA), 
                       stringsAsFactors = FALSE)
+## sealant, not present or present = 1
 se.dict = data.frame(key = c(0, 1, 2, 4, 5, 9, NA),
                       value = c(0, 1, 1, 1, 1, NA, NA), 
                       stringsAsFactors = FALSE)
+
 
 tooth.df = select(data.ohxden, SEQN, OHX01TC:OHX32TC, OHX02CTC:OHX31CTC, OHX02CSC:OHX31CSC, OHX02SE:OHX31SE) %>% 
   gather(key, value, OHX01TC:OHX32TC, OHX02CTC:OHX31CTC, OHX02CSC:OHX31CSC, OHX02SE:OHX31SE) %>% 
@@ -96,6 +101,7 @@ temp = filter(tooth.df.tidy, is.na(permanent)) %>%
   group_by(permanent, sound, unrestored, sealant) %>%
   summarize(n())
 ## all other fields are NA or 0 - filter to permanent != NA
+## no tooth there - don't know anything about it --> remove them
 tooth.df.tidy = filter(tooth.df.tidy, !is.na(permanent))
 
 a = unique(select(tooth.df.tidy, -SEQN, -tooth)) %>% arrange(permanent, sound, unrestored, sealant)
@@ -119,10 +125,10 @@ all(c$unsound >= c$unrestored)
 ## should be TRUE and is - great1
 
 # histogram of restored caries
-par(mfrow = c(2, 1), mar = c(4,4,0,2))
-hist(c$unsound - c$unrestored, breaks = seq(0, 32), main = '', xlab = 'restored caries', col = grey(0.8, 0.5))
-par(mar = c(4,4,0,2))
-hist(c$unrestored, breaks = seq(0, 32), main = '', xlab = 'untreated caries', col = grey(0.8, 0.5))
+# par(mfrow = c(2, 1), mar = c(4,4,0,2))
+# hist(c$unsound - c$unrestored, breaks = seq(0, 32), main = '', xlab = 'restored caries', col = grey(0.8, 0.5))
+# par(mar = c(4,4,0,2))
+# hist(c$unrestored, breaks = seq(0, 32), main = '', xlab = 'untreated caries', col = grey(0.8, 0.5))
 
 
 ## count those individuals from each combination
@@ -287,7 +293,7 @@ caries_sealant_plots_Dye = function(df){
   ## expecting colnames SEQN, counter, sound, unsount, unrestored, sealant
   ## and only one value of primary/permanent
   output.total = df %>% 
-    select(-SEQN) %>%
+    #select(-SEQN) %>%
     mutate_each(funs(binarize), counter, sound:sealant) %>%
     group_by(permanent) %>%
     summarize_each(funs(sum), counter, unsound, unrestored) %>%
@@ -306,17 +312,25 @@ caries_sealant_plots_Dye = function(df){
     summarize_each(funs(sum), counter, unsound, unrestored) %>%
     mutate(unsound = unsound/counter, unrestored = unrestored/counter)
   
+  output.eth = output.eth[match(c('asian', 'hisp', 'black', 'white'), output.eth$ethnicity),]
   ## plotting
   ## first, how many bars we gonna have? add 2 for spaces between and 2 for width + margin
   n = nrow(output.total) + nrow(output.age) + nrow(output.eth) + 2
   
-  temp.vector = c(output.total$unsound, output.age$unsound, output.eth$unsound)
-  temp.names = c('total', output.age$age, output.eth$ethnicity)
+  #temp.vector = c(output.total$unsound, output.age$unsound, output.eth$unsound)
+  #temp.names = c('total', output.age$age, output.eth$ethnicity)
+  ## Trying to get the correct order
+  temp.vector = c(output.eth$unsound, rev(output.age$unsound), output.total$unsound)
+  temp.names = c(output.eth$ethnicity, rev(output.age$age), 'total')
+  
+  ##
+  if(!require(RColorBrewer)){install.packages('RColorBrewer');library(RColorBrewer)}
   temp.cols = brewer.pal(4, 'Paired')[c(1,3)]
-  temp.space = c(0, 1, rep(0, nrow(output.age) - 1), 1, rep(0, nrow(output.eth) - 1))
+  col.vector = c(rep(temp.cols[2], nrow(output.eth)), rep(temp.cols[1], nrow(output.age)), gray(0.8))
+  temp.space = c(rep(0, nrow(output.eth)), 1, rep(0, nrow(output.age) - 1), 1)
   barplot(temp.vector, names.arg = temp.names, width = 1, 
           main = paste(ifelse(output.total$permanent[1] == 0, 'Primary', 'Permanent'), 'teeth caries'),
-          col = c(gray(0.8), rep(temp.cols[1], nrow(output.age)), rep(temp.cols[2], nrow(output.eth))),
+          col = col.vector,
           space = temp.space, 
           horiz = T, xlim = c(0,1), ylim = c(0, n), las = 2)
   box()
