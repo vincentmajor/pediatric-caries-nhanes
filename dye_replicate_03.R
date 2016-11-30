@@ -30,7 +30,11 @@ if(length(list.files("data")) == 0){
   data.dye.raw = nhanes_load_data(files.dye$data_file_name, files.dye$cycle, destination = "data", cache = TRUE)
   
   # 
-  files.other = files.2011[files.2011$data_file_name %in% c('BMX_G', 'BPX_G', 'DR1TOT_G', 'DR2TOT_G', 'COTNAL_G', 'HDL_G', 'TRIGLY_G', 'TCHOL_G', 'GLU_G', 'OGTT_G', 'ENX_G', 'MGX_G', 'CBQ_G'),]
+  temp.datanames = c('BMX_G', 'BPX_G', 'DR1TOT_G', 'DR2TOT_G', 'COTNAL_G', 
+                     'HDL_G', 'TRIGLY_G', 'TCHOL_G', 'GLU_G', 'OGTT_G', 
+                     'ENX_G', 'MGX_G', 'CBQ_G', 'ECQ_G', 'INQ_G', 'SMQFAM_G',
+                     'OHQ_G', 'DBQ_G', 'FSQ_G', 'WHQMEC_G')
+  files.other = files.2011[files.2011$data_file_name %in% temp.datanames,]
   data.other.raw = nhanes_load_data(files.other$data_file_name, files.other$cycle, destination = "data", cache = TRUE)
   
 #   files.2011[files.2011$data_file_name %in% c('PBCD_G', 'HDL_G', 'TRIGLY_G', 'TCHOL_G', 'COTNAL_G', 'CUSEZN_G', 'EPH_G', 'FOLATE_G', 'FOLFMS_G', 'GHB_G', 'UIO_G', 'IHGEM_G', 'UHG_G', 'UHM_G', 'UHMS_G', 'PP_G', 'PHTHTE_G', 'GLU_G'),]
@@ -518,6 +522,84 @@ remove(data.cbq.raw)
 ## I looked at the plots e.g. plot(data.cbq$money_grocery, data.cbq$money_grocery_notfood)
 ## to look for dependencies and that is the only one - which makes sense!
 
+## early childhood - surrogates for socioeconomic status
+data.ecq.raw = read_csv(file.path("data", "ECQ_G.csv"))
+## weight status dictionary
+weight_status.dict = data.frame(key = c(1, 2, 3, 7, 9, NA),
+                     value = c('over', 'under', 'right', NA, NA, NA),
+                     stringsAsFactors = FALSE)
+data.ecq = select(data.ecq.raw, SEQN, ECD010, ECQ020, ECD070A, ECD070B, WHQ030E, MCQ080E, ECQ150) %>%
+  mutate(mother_age = ifelse(ECD010 == 7777 | ECD010 == 9999, NA, ECD010),
+         mother_smoked = ifelse(ECQ020 == 7 | ECQ020 == 9, NA, as.integer(ECQ020 == 1)),
+         birth_weight_lb = ifelse(ECD070A > 1000, NA, ECD070A + ECD070B/16),
+         parent_child_weight_status = weight_status.dict$value[match(WHQ030E, weight_status.dict$key)],
+         parent_told_child_overweight = ifelse(MCQ080E == 7 | MCQ080E == 9, NA, as.integer(MCQ080E == 1)),
+         parent_helping_control_weight = ifelse(ECQ150 == 7 | ECQ150 == 9, NA, as.integer(ECQ150 == 1)) ) %>%
+  select(-ECD010, -ECQ020, -ECD070A, -ECD070B, -WHQ030E, -MCQ080E, -ECQ150)
+remove(data.ecq.raw, weight_status.dict)
+
+## income
+data.inq.raw = read_csv(file.path("data", "INQ_G.csv"))
+data.inq = select(data.inq.raw, SEQN, INDFMMPI) %>%
+  rename(income_poverty_index = INDFMMPI)
+remove(data.inq.raw)
+
+## smoking in home status
+data.smqfam.raw = read_csv(file.path("data", "SMQFAM_G.csv"))
+data.smqfam = select(data.smqfam.raw, SEQN, SMD410:SMD430) %>%
+  mutate(household_smokers_flag = ifelse(SMD410 == 7 | SMD410 == 9, NA, as.integer(SMD410 == 1)) ) %>%
+  rename(household_smokers_num = SMD415,
+         household_cigarettes = SMD430) %>%
+  select(-SMD410, -SMD415A)
+remove(data.smqfam.raw)
+
+## oral health
+data.ohq.raw = read_csv(file.path("data", "OHQ_G.csv"))
+## dental status dictionary
+dentist_visit.dict = data.frame(key = c(1, 2, 3, 4, 5, 6, 7, 77, 99, NA),
+                                value = c('< 0.5', '0.5 - 1', '1 - 2', '2 - 3', '3 - 5', '>5', 'never', NA, NA, NA),
+                                stringsAsFactors = FALSE)
+dentist_visit_reason.dict = data.frame(key = c(1, 2, 3, 4, 5, 7, 9, NA),
+                                value = c('routine', 'request', 'symptomatic', 'followup', 'other', NA, NA, NA),
+                                stringsAsFactors = FALSE)
+dental_self_rate.dict = data.frame(key = c(1, 2, 3, 4, 5, 7, 9, NA),
+                                       value = c('excellent', 'very good', 'good', 'fair', 'poor', NA, NA, NA),
+                                       stringsAsFactors = FALSE)
+data.ohq = select(data.ohq.raw, SEQN, OHQ030, OHQ033, OHQ770, OHQ845) %>%
+  mutate(dental_visit_time = dentist_visit.dict$value[match(OHQ030, dentist_visit.dict$key)],
+         dental_visit_reason = dentist_visit_reason.dict$value[match(OHQ033, dentist_visit_reason.dict$key)],
+         dental_needed_couldnt = ifelse(OHQ770 == 7 | OHQ770 == 9, NA, as.integer(OHQ770 == 1)),
+         dental_self_rate = dental_self_rate.dict$value[match(OHQ845, dental_self_rate.dict$key)]) %>%
+  select(-OHQ030, -OHQ033, -OHQ770, -OHQ845)
+remove(data.ohq.raw, dentist_visit.dict, dentist_visit_reason.dict, dental_self_rate.dict)
+
+## diet behaviour and nutrition
+# data.dbq.raw = read_csv(file.path("data", "DBQ_G.csv"))
+# data.dbq = select(data.dbq.raw, SEQN, DBQ010, DBD030, DBD041, DBD050, DBQ700, DBD900, DBD905, DBD910) %>%
+#   mutate(diet_breastfed_flag = ifelse(DBQ010 == 7 | DBQ010 == 9, NA, as.integer(DBQ010 == 1)),
+#          diet_breastfed_years = ifelse(DBD030 == 777777 | DBD030 == 999999, NA, ifelse(DBD030 == 0, 2, DBD030/365)) )
+
+## food security
+data.fsq.raw = read_csv(file.path("data", "FSQ_G.csv"))
+food_security.dict = data.frame(key = c(1, 2, 3, 7, 9, NA),
+                                   value = c('often', 'sometimes', 'never', NA, NA, NA),
+                                   stringsAsFactors = FALSE)
+data.fsq = select(data.fsq.raw, SEQN, FSD032E, FSD032F) %>%
+  mutate(food_security_cantafford = food_security.dict$value[match(FSD032E, food_security.dict$key)],
+         food_security_notenough = food_security.dict$value[match(FSD032F, food_security.dict$key)]) %>%
+  select(-FSD032E, -FSD032F)
+remove(data.fsq.raw, food_security.dict)
+
+## weight management youth
+data.whq.raw = read_csv(file.path("data", "WHQMEC_G.csv"))
+weight_status.dict = data.frame(key = c(1, 2, 3, 7, 9, NA),
+                                value = c('over', 'under', 'right', NA, NA, NA),
+                                stringsAsFactors = FALSE)
+data.whq = select(data.whq.raw, SEQN, WHQ030M) %>%
+  mutate(self_weight_status = weight_status.dict$value[match(WHQ030M, weight_status.dict$key)]) %>%
+  select(-WHQ030M)
+remove(data.whq.raw, weight_status.dict)
+
 
 #### merging tables ----
 
@@ -534,4 +616,8 @@ remove(data.cbq.raw)
 # print(dim(df.full)); remove(df.full)
 # # 0.021
 
-df.full = Reduce(function(...) left_join(..., by = 'SEQN'), list(c.demo, data.bmx, data.bpx, data.chol, data.cotnal, data.diabetes, data.diet, data.enx, data.mgx))
+df.full = Reduce(function(...) left_join(..., by = 'SEQN'), 
+                 list(c.demo, data.bmx, data.bpx, data.chol, data.cotnal, 
+                      data.diabetes, data.diet, data.enx, data.mgx, data.ecq,
+                      data.inq, data.smqfam, data.ohq, data.fsq, data.whq))
+## still need to add demographics things
