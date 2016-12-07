@@ -14,7 +14,7 @@ if(!require(stringr)){install.packages('stringr');library(stringr)}
 if(!dir.exists("data")){
   dir.create("data")
   writeLines("Created a data/ directory to store the data")
-  }
+}
 
 ## Load list of all availible files 
 if(length(list.files("data")) == 0){
@@ -37,14 +37,14 @@ if(length(list.files("data")) == 0){
   files.other = files.2011[files.2011$data_file_name %in% temp.datanames,]
   data.other.raw = nhanes_load_data(files.other$data_file_name, files.other$cycle, destination = "data", cache = TRUE)
   
-#   files.2011[files.2011$data_file_name %in% c('PBCD_G', 'HDL_G', 'TRIGLY_G', 'TCHOL_G', 'COTNAL_G', 'CUSEZN_G', 'EPH_G', 'FOLATE_G', 'FOLFMS_G', 'GHB_G', 'UIO_G', 'IHGEM_G', 'UHG_G', 'UHM_G', 'UHMS_G', 'PP_G', 'PHTHTE_G', 'GLU_G'),]
-#   ## definitely include
-#   BIOPRO_G biochemistry profile
-#   DR1TOT_G
-#   DR2TOT_G
-#   # maybe include in the older group
-#   THYROD_G thyroid
-#   TGEMA_G celiac 
+  #   files.2011[files.2011$data_file_name %in% c('PBCD_G', 'HDL_G', 'TRIGLY_G', 'TCHOL_G', 'COTNAL_G', 'CUSEZN_G', 'EPH_G', 'FOLATE_G', 'FOLFMS_G', 'GHB_G', 'UIO_G', 'IHGEM_G', 'UHG_G', 'UHM_G', 'UHMS_G', 'PP_G', 'PHTHTE_G', 'GLU_G'),]
+  #   ## definitely include
+  #   BIOPRO_G biochemistry profile
+  #   DR1TOT_G
+  #   DR2TOT_G
+  #   # maybe include in the older group
+  #   THYROD_G thyroid
+  #   TGEMA_G celiac 
 }
 
 ## nov 22 - loading files that aren't demographics or dental
@@ -90,8 +90,8 @@ data.ohxden = select(data.ohxden, -OHDEXSTS, -OHDDESTS, -OHXIMP, -(file_name:end
 
 ## tooth count, primary, permanent = 1, missing etc.
 tc.dict = data.frame(key = c(1, 2, 3, 4, 5, 9, NA),
-                      value = c(0, 1, NA, NA, NA, NA, NA),
-                      stringsAsFactors = FALSE)
+                     value = c(0, 1, NA, NA, NA, NA, NA),
+                     stringsAsFactors = FALSE)
 ## coronol tooth count, sound = 1, unsound etc
 ctc.dict = data.frame(key = c('D', 'E', 'J', 'K', 'M', 'P', 'Q', 'R', 'S', 'T', 'U', 'X', 'Y', 'Z'),
                       value = c(1, 0, 0, 0, 0, 0, 0, 0, 1, 0, NA, 0, NA, 0), 
@@ -102,8 +102,8 @@ csc.dict = data.frame(key = c(seq(0, 9), NA),
                       stringsAsFactors = FALSE)
 ## sealant, not present or present = 1
 se.dict = data.frame(key = c(0, 1, 2, 4, 5, 9, NA),
-                      value = c(0, 1, 1, 1, 1, NA, NA), 
-                      stringsAsFactors = FALSE)
+                     value = c(0, 1, 1, 1, 1, NA, NA), 
+                     stringsAsFactors = FALSE)
 
 
 tooth.df = select(data.ohxden, SEQN, OHX01TC:OHX32TC, OHX02CTC:OHX31CTC, OHX02CSC:OHX31CSC, OHX02SE:OHX31SE) %>% 
@@ -220,7 +220,7 @@ data.demo = select(data.demo.raw, SEQN, RIAGENDR, RIDAGEYR, RIDRETH3, RIDEXAGY, 
          citizen = DMDCITZN == 1,
          interview_english = SIALANG == 1, #no missing here
          age = ifelse(is.na(RIDEXAGY), RIDAGEYR, RIDEXAGY)
-         ) %>%
+  ) %>%
   rename(ethnicity = RIDRETH3, 
          #age_exam = RIDEXAGY, 
          income_ratio_over_poverty = INDFMPIR, 
@@ -247,8 +247,8 @@ c.demo = c.demo %>%
 
 ## replace ethnicity keys with values
 ethnicity.dict = data.frame(key = c(1, 2, 3, 4, 6, 7, NA),
-                     value = c('mex', 'hisp', 'white', 'black', 'asian', 'other', NA), 
-                     stringsAsFactors = FALSE)
+                            value = c('mex', 'hisp', 'white', 'black', 'asian', 'other', NA), 
+                            stringsAsFactors = FALSE)
 c.demo = c.demo %>%
   mutate(ethnicity = ethnicity.dict$value[match(ethnicity, ethnicity.dict$key)])
 
@@ -526,8 +526,8 @@ remove(data.cbq.raw)
 data.ecq.raw = read_csv(file.path("data", "ECQ_G.csv"))
 ## weight status dictionary
 weight_status.dict = data.frame(key = c(1, 2, 3, 7, 9, NA),
-                     value = c('over', 'under', 'right', NA, NA, NA),
-                     stringsAsFactors = FALSE)
+                                value = c('over', 'under', 'right', NA, NA, NA),
+                                stringsAsFactors = FALSE)
 data.ecq = select(data.ecq.raw, SEQN, ECD010, ECQ020, ECD070A, ECD070B, WHQ030E, MCQ080E, ECQ150) %>%
   mutate(mother_age = ifelse(ECD010 == 7777 | ECD010 == 9999, NA, ECD010),
          mother_smoked = ifelse(ECQ020 == 7 | ECQ020 == 9, NA, as.integer(ECQ020 == 1)),
@@ -560,11 +560,11 @@ dentist_visit.dict = data.frame(key = c(1, 2, 3, 4, 5, 6, 7, 77, 99, NA),
                                 value = c('< 0.5', '0.5 - 1', '1 - 2', '2 - 3', '3 - 5', '>5', 'never', NA, NA, NA),
                                 stringsAsFactors = FALSE)
 dentist_visit_reason.dict = data.frame(key = c(1, 2, 3, 4, 5, 7, 9, NA),
-                                value = c('routine', 'request', 'symptomatic', 'followup', 'other', NA, NA, NA),
-                                stringsAsFactors = FALSE)
-dental_self_rate.dict = data.frame(key = c(1, 2, 3, 4, 5, 7, 9, NA),
-                                       value = c('excellent', 'very good', 'good', 'fair', 'poor', NA, NA, NA),
+                                       value = c('routine', 'request', 'symptomatic', 'followup', 'other', NA, NA, NA),
                                        stringsAsFactors = FALSE)
+dental_self_rate.dict = data.frame(key = c(1, 2, 3, 4, 5, 7, 9, NA),
+                                   value = c('excellent', 'very good', 'good', 'fair', 'poor', NA, NA, NA),
+                                   stringsAsFactors = FALSE)
 data.ohq = select(data.ohq.raw, SEQN, OHQ030, OHQ033, OHQ770, OHQ845) %>%
   mutate(dental_visit_time = dentist_visit.dict$value[match(OHQ030, dentist_visit.dict$key)],
          dental_visit_reason = dentist_visit_reason.dict$value[match(OHQ033, dentist_visit_reason.dict$key)],
@@ -574,16 +574,32 @@ data.ohq = select(data.ohq.raw, SEQN, OHQ030, OHQ033, OHQ770, OHQ845) %>%
 remove(data.ohq.raw, dentist_visit.dict, dentist_visit_reason.dict, dental_self_rate.dict)
 
 ## diet behaviour and nutrition
-# data.dbq.raw = read_csv(file.path("data", "DBQ_G.csv"))
-# data.dbq = select(data.dbq.raw, SEQN, DBQ010, DBD030, DBD041, DBD050, DBQ700, DBD900, DBD905, DBD910) %>%
-#   mutate(diet_breastfed_flag = ifelse(DBQ010 == 7 | DBQ010 == 9, NA, as.integer(DBQ010 == 1)),
-#          diet_breastfed_years = ifelse(DBD030 == 777777 | DBD030 == 999999, NA, ifelse(DBD030 == 0, 2, DBD030/365)) )
+data.dbq.raw = read_csv(file.path("data", "DBQ_G.csv"))
+diet_self_rate.dict = data.frame(key = c(1, 2, 3, 4, 5, 7, 9, NA),
+                                 value = c('excellent', 'very good', 'good', 'fair', 'poor', NA, NA, NA),
+                                 stringsAsFactors = FALSE)
+data.dbq = select(data.dbq.raw, SEQN, DBQ010, DBD030, DBD041, DBD050, DBD055, DBQ700, DBD900, DBD905, DBD910) %>%
+  mutate(diet_breastfed_flag = ifelse(DBQ010 == 7 | DBQ010 == 9, NA, as.integer(DBQ010 == 1)),
+         diet_breastfed_days = ifelse(DBD030 == 777777 | DBD030 == 999999, NA, ifelse(DBD030 == 0, 2*365, DBD030)),
+         diet_formula_flag = ifelse(DBD041 > 0 & DBD041 < 731, 1, 0),
+         diet_formula_started = ifelse(DBD041 == 777777 | DBD041 == 999999 | DBD041 == 0, NA, DBD041),
+         diet_formula_ended = ifelse(DBD050 == 777777 | DBD050 == 999999, NA, ifelse(DBD050 == 0, 2*365, DBD050)),
+         diet_formula_days = diet_formula_ended - diet_formula_started,
+         diet_other_started = ifelse(DBD055 == 777777 | DBD055 == 999999, NA, DBD055),
+         diet_self_rate = diet_self_rate.dict$value[match(DBQ700, diet_self_rate.dict$key)],
+         diet_7daymeals_fastfood = ifelse(DBD900 == 7777 | DBD900 == 9999, NA, ifelse(DBD900 == 5555, 22, DBD900)),
+         diet_30daymeals_readytoeat = ifelse(DBD905 == 7777 | DBD905 == 9999, NA, DBD905),
+         diet_30daymeals_frozen = ifelse(DBD910 == 7777 | DBD910 == 9999, NA, DBD910) ) %>%
+  select(-(DBQ010:DBD910))
+remove(data.dbq.raw, diet_self_rate.dict)
+## Yasmi thinks that longer may be associated with higher caries rates
+## include other milk based things
 
 ## food security
 data.fsq.raw = read_csv(file.path("data", "FSQ_G.csv"))
 food_security.dict = data.frame(key = c(1, 2, 3, 7, 9, NA),
-                                   value = c('often', 'sometimes', 'never', NA, NA, NA),
-                                   stringsAsFactors = FALSE)
+                                value = c('often', 'sometimes', 'never', NA, NA, NA),
+                                stringsAsFactors = FALSE)
 data.fsq = select(data.fsq.raw, SEQN, FSD032E, FSD032F) %>%
   mutate(food_security_cantafford = food_security.dict$value[match(FSD032E, food_security.dict$key)],
          food_security_notenough = food_security.dict$value[match(FSD032F, food_security.dict$key)]) %>%
@@ -617,7 +633,19 @@ remove(data.whq.raw, weight_status.dict)
 # # 0.021
 
 df.full = Reduce(function(...) left_join(..., by = 'SEQN'), 
-                 list(c.demo, data.bmx, data.bpx, data.chol, data.cotnal, 
+                 list(select(c.demo, -age, -ethnicity), 
+                      data.demo, data.bmx, data.bpx, data.chol, data.cotnal, 
                       data.diabetes, data.diet, data.enx, data.mgx, data.ecq,
-                      data.inq, data.smqfam, data.ohq, data.fsq, data.whq))
-## still need to add demographics things
+                      data.inq, data.smqfam, data.ohq, data.dbq, data.fsq, 
+                      data.whq))
+df.full = df.full %>% mutate(unsound_flag = as.integer(unsound > 0)) %>%
+  ungroup()
+## check column names
+colnames(df.full)
+length(unique(df.full$SEQN))
+sum(duplicated(df.full$SEQN))
+## 3300 individuals, 1201 have a mix of primary and permanent teeth
+## venn diagram
+library(gplots)
+venn( list(primary = unlist(subset(df.full, permanent == 0, SEQN)),
+           permanent = unlist(subset(df.full, permanent == 1, SEQN))) )
