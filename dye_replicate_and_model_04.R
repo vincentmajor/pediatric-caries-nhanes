@@ -33,7 +33,7 @@ if(length(list.files("data")) == 0){
   temp.datanames = c('BMX_G', 'BPX_G', 'DR1TOT_G', 'DR2TOT_G', 'COTNAL_G', 
                      'HDL_G', 'TRIGLY_G', 'TCHOL_G', 'GLU_G', 'OGTT_G', 
                      'ENX_G', 'MGX_G', 'CBQ_G', 'ECQ_G', 'INQ_G', 'SMQFAM_G',
-                     'OHQ_G', 'DBQ_G', 'FSQ_G', 'WHQMEC_G', 'AUX_G')
+                     'OHQ_G', 'DBQ_G', 'FSQ_G', 'WHQMEC_G')
   files.other = files.2011[files.2011$data_file_name %in% temp.datanames,]
   data.other.raw = nhanes_load_data(files.other$data_file_name, files.other$cycle, destination = "data", cache = TRUE)
   
